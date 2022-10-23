@@ -1,0 +1,4 @@
+=== FTC
+- récupère histogramme sous forme de liste
+- définir les segmentations en trouvant tous les minima de l'histogramme : liste de segments(=list)
+- 
