@@ -2,3 +2,9 @@
 - récupère histogramme sous forme de liste
 - définir les segmentations en trouvant tous les minima de l'histogramme : liste de segments(=list)
 - 
+
+
+=== 24 octobre 2022
+DONE : 	implémentation fonctionnelle de FTC
+TODO : 	implémenter la fonction permettant de vérifier si un segment vérifie l'hypothèse unimodale. 
+	Pour l'instant elle est codée en fixant artificiellement la tolérance de variation.
