@@ -190,15 +190,13 @@ def FTC(histogram : ArrayType) -> ArrayType :
         N_in_range = (N <= len(segmentation))
     return segmentation
 
-### test
-hist1 = np.array([0, 1, 2, 3, 4, 3, 2, 3, 0, 4, 5, 9, 4, 5, 4, 5, 3, 0, 7])
-hist2 = np.array([0, 1, 2, 0, 3, 4, 5, 3, 6, 5, 6, 2, 5, 1, 3, 2, 0])
+#%% test
 
-ftc1 = FTC(hist1)
-ftc2 = FTC(hist2)
-print(hist1)
-print(ftc1)
-print(hist2)
-print(ftc2)
+#hist1 = np.array([0, 1, 2, 3, 4, 3, 2, 3, 0, 4, 5, 9, 4, 5, 4, 5, 3, 0, 7])
+#hist2 = np.array([0, 1, 2, 0, 3, 4, 5, 3, 6, 5, 6, 2, 5, 1, 3, 2, 0])
+#for test in [hist1, hist2]:
+#   ftc1 = FTC(hist1)
+#   print(hist1)
+#   print(ftc1)
 
 
