@@ -334,7 +334,6 @@ def FTC(histogram : ArrayType) -> ArrayType :
         segmentation = merge_if_unimodal(histogram, segmentation, N)
         N += 1
         N_in_range = (N <= len(segmentation))
-    segmentation[-1][-1] += 1
     return segmentation
     
 #%% test

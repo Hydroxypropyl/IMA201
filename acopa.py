@@ -35,6 +35,7 @@ def RGB_to_HSI_modified(RGB_image : ArrayType, saturation_threshhold : int = Q/(
             S = np.sqrt((R - I)**2 + (G - I)**2 + (B - I)**2)
             if S > saturation_threshhold :
                 H = np.arccos( ( (G - I) - (B - I) ) / (S * np.sqrt(2)))
+                #TODO : H est dans [0, pi] pour l'instant, il faudrait qu'il soit dans [0, 2pi]
                 HSI_image[y][x] = [H, S, I, 0, 0, 0]
             else :
                 HSI_image[y][x] = [-1, S, I, 0, 0, 0]
@@ -61,7 +62,7 @@ def get_hue_based_segmentation(HSI_image : ArrayType)  -> ArrayType :
             if pixel[0] != -1 : #condition of chromaticity
                 hues.append(pixel[0])
     #print("hues", hues)
-    histo, bins = np.histogram(hues, bins = [i/(2*np.pi*Q) for i in range(Q)])
+    histo, bins = np.histogram(hues, bins = [(i*2*np.pi/Q) for i in range(Q+1)])
     return FTC(histo), histo
             
 
@@ -101,7 +102,7 @@ def get_saturation_based_segmentation(hue_segmentation : ArrayType, hue_histogra
             while classified == False and i < len(hue_segmentation):
                 segment = hue_segmentation[i] #indices of start and end in hue_histogram
                 #print("intervals,", hue_histogram[segment[0]], hue_value, hue_histogram[segment[1]])
-                if hue_value >= segment[0] and hue_value <= segment[1] : 
+                if hue_value >= segment[0]*2*np.pi/Q and hue_value <= segment[1]*2*np.pi/Q: 
                     saturation_grouped_by_hue[i].append(pixel[1])
                     HSI_image[line_index][row_index][3] = i # this pixel is in the ith segment of the hue segmentation
                     classified = True
@@ -114,7 +115,7 @@ def get_saturation_based_segmentation(hue_segmentation : ArrayType, hue_histogra
     saturation_segmentation = []
     saturation_histograms = []
     for S_i in saturation_grouped_by_hue : 
-        histo, bins = np.histogram( S_i, bins = [i/Q for i in range(Q+1)] )
+        histo = np.histogram( S_i)
         saturation_histograms.append(histo)
         saturation_segmentation.append([ FTC(histo) ]) #apply FTC on the pixels in S_i based on the saturation value
 
@@ -152,7 +153,7 @@ def get_intensity_based_segmentation(saturation_segmentation : ArrayType, satura
                     for j in range(len(segment)) :
                         subsegment = segment[j] 
                         print(len(subsegment[0]))
-                        if saturation_value >= subsegment[0] and saturation_value <= subsegment[-1] : 
+                        if saturation_value >= subsegment[0]/Q and saturation_value <= subsegment[-1]/Q : 
                             intensity_grouped_by_saturation[i][j].append(pixel[1])
                             HSI_image[line_index][row_index][4] = j
                             classified = True
@@ -256,6 +257,7 @@ def acopa(image : ArrayType) -> ArrayType :
 image = cv2.imread("ladybug.jpeg")
 HSI_image = RGB_to_HSI_modified(image)
 hue_segmentation, hue_histogram = get_hue_based_segmentation(HSI_image)
+print(hue_histogram)
 saturation_segmentation, HSI_image, saturation_histograms = get_saturation_based_segmentation(hue_segmentation, hue_histogram, HSI_image)
 
 
