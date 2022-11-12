@@ -1,11 +1,12 @@
+#%% imports 
 from array import ArrayType
 from multiprocessing import current_process
 from multiprocessing.dummy import Array
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 import scipy.stats as stats
 
+#%%functions 
 # Reminder : np.histogram returns an np.array
 
 def grenander(segment: ArrayType, iteration: int, ascending: bool())-> ArrayType :
@@ -197,10 +198,10 @@ def is_unimodal_new(segment : ArrayType) -> bool :
     grnd2_asc = grenander(S2,50,True)
     grnd2_dsc = grenander(S2,50,False)
     if(test_stat(S1,grnd1_asc)==0 and test_stat(S2,grnd2_dsc)==0):
-        print('max trouvé en : ',max_index)
+        #print('max trouvé en : ',max_index)
         return True # segment[i] is considered a maximum, and the unimodal hypothesis is correct.
     if(test_stat(S1,grnd1_dsc)==0 and test_stat(S2,grnd2_asc)==0):
-        print('min trouvé en :',max_index)
+        #print('min trouvé en :',max_index)
         return True # segment[i] is considered a minimum, and the unimodal hypothesis is correct.
     return False #if no correct max was found
 
@@ -284,7 +285,7 @@ def merge_if_unimodal(histogram : ArrayType, segmentation : ArrayType, N : int) 
                 successive_failures = nb_possible_groups
                 break
 
-            if(is_unimodal(histogram[start_index : end_index + 1])) :
+            if(is_unimodal_new(histogram[start_index : end_index + 1])) :
             # segments can be merged
                 iterator += N
                 new_segmentation.append(merged_segment) # update the segmentation
@@ -329,14 +330,15 @@ def FTC(histogram : ArrayType) -> ArrayType :
     N = 2
     N_in_range = (N <= len(segmentation))
     while(N_in_range) :
-        print('the current segmentation is : ',np.asarray(segmentation))
+        #print('the current segmentation is : ',np.asarray(segmentation))
         segmentation = merge_if_unimodal(histogram, segmentation, N)
         N += 1
         N_in_range = (N <= len(segmentation))
+    segmentation[-1][-1] += 1
     return segmentation
     
 #%% test
-
+""" 
 hist1 = np.array([0, 1, 2, 3, 4, 3, 2, 3, 0, 4, 5, 9, 4, 5, 4, 5, 3, 0, 7])
 hist2 = np.array([0, 1, 2, 0, 3, 4, 5, 3, 6, 5, 6, 2, 5, 1, 3, 2, 0])
 hist3 = np.array([40., 30., 25., 18., 22., 21., 14., 12., 9., 3., 6., 2., 1])
@@ -358,12 +360,12 @@ print(grnd4)
 test_3 = test_stat(hist3,grnd3)
 print(test_3)
 test_4 = test_stat(hist4,grnd4)
-print(test_4)
+print(test_4) """
 
 
 #%%test with real images
 
-from skimage import io as skio
+""" from skimage import io as skio
 import cv2
 
 im = cv2.imread('ladybug.jpeg')
@@ -378,7 +380,7 @@ ftc_ladybug = FTC(histo)
 print(ftc_ladybug)
 for interval in ftc_ladybug:
     plt.axvline(x = interval[1], color = 'r')
-    
+     """
 
 #%% tests Manon
 
