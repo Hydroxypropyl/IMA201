@@ -337,7 +337,6 @@ def FTC(histogram : ArrayType) -> ArrayType :
     
 #%% test
 
-<<<<<<< HEAD
 hist1 = np.array([0, 1, 2, 3, 4, 3, 2, 3, 0, 4, 5, 9, 4, 5, 4, 5, 3, 0, 7])
 hist2 = np.array([0, 1, 2, 0, 3, 4, 5, 3, 6, 5, 6, 2, 5, 1, 3, 2, 0])
 hist3 = np.array([40., 30., 25., 18., 22., 21., 14., 12., 9., 3., 6., 2., 1])
@@ -381,11 +380,7 @@ for interval in ftc_ladybug:
     plt.axvline(x = interval[1], color = 'r')
     
 
-
-
-
-=======
-#%% test
+#%% tests Manon
 
 #hist1 = np.array([0, 1, 2, 3, 4, 3, 2, 3, 0, 4, 5, 9, 4, 5, 4, 5, 3, 0, 7])
 #hist2 = np.array([0, 1, 2, 0, 3, 4, 5, 3, 6, 5, 6, 2, 5, 1, 3, 2, 0])
@@ -393,6 +388,6 @@ for interval in ftc_ladybug:
 #   ftc1 = FTC(hist1)
 #   print(hist1)
 #   print(ftc1)
->>>>>>> 8d762b0003eaf6c82aecd7ec1cc931593f02fa4a
+
 
 
