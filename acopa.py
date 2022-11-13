@@ -12,7 +12,7 @@ Q = 50 # quantification factor
 
 #%% convert image to a modified HSI
 
-def BGR_to_modified_HSI(RGB_image : ArrayType, saturation_threshhold : int = Q/(2*np.pi)) -> ArrayType:
+def BGR_to_modified_HSI(RGB_image : ArrayType, saturation_threshhold : int = 0.08) -> ArrayType:
     """
     Takes the image in BGR and returns the image where each pixel is coded by [H, S, I, 0, 0, 0]]
 
@@ -38,7 +38,7 @@ def BGR_to_modified_HSI(RGB_image : ArrayType, saturation_threshhold : int = Q/(
             G = pixel[1]/255
             R = pixel[2]/255
             I = (R + G + B) / 3 # in [0, 1]
-            S = np.sqrt((R - I)**2 + (G - I)**2 + (B - I)**2) #considered to be in [0, 1]
+            S = np.sqrt((R - I)**2 + (G - I)**2 + (B - I)**2) #considered to be in [0, 1.2] because max = sqrt(3*0.66**2)
             if S > saturation_threshhold :
                 H = np.arccos( ( (G - I) - (B - I) ) / (S * np.sqrt(2))) # H is in [0, pi]
                 HSI_image[y][x] = [H, S, I, 0, 0, 0]
@@ -134,7 +134,7 @@ def get_saturation_based_segmentation(hue_segmentation : ArrayType, hue_histogra
     saturation_segmentation = []
     saturation_histograms = []
     for S_i in saturation_grouped_by_hue : 
-        histo, bins = np.histogram(S_i, bins = Q) #quantify S when calculating histogram
+        histo, bins = np.histogram(S_i, bins = [i*1.2/Q for i in range(Q+1)]) #quantify S when calculating histogram
         saturation_histograms.append(histo)
         saturation_segmentation.append([ FTC(histo) ]) #apply FTC on the pixels in S_i based on the saturation value
 
@@ -189,7 +189,7 @@ def get_intensity_based_segmentation(saturation_segmentation : ArrayType, satura
         S_i = intensity_grouped_by_saturation[i]
         for j in len(S_i) :
             S_ij = S_i[j]
-            histo = np.histogram(S_ij, bins = [i/Q for i in range(Q+1)] )
+            histo = np.histogram(S_ij, bins = [i/Q for i in range(Q+1)])
             intensity_segmentation[i][j].append(FTC(histo))
             intensity_histograms[i][j] = histo
 
@@ -201,7 +201,7 @@ def get_intensity_based_segmentation(saturation_segmentation : ArrayType, satura
             for k in range(len(S_ij)) :
                 S_ijk = S_ij[k]
                 intensity = pixel[2]
-                if intensity >= S_ijk[0] and intensity <=S_ijk[-1] :
+                if intensity >= S_ijk[0]*1.2/Q and intensity <=S_ijk[-1]*1.2/Q :
                     HSI_image[line_index][row_index][5] = k
     return intensity_segmentation, HSI_image, intensity_histograms
 
