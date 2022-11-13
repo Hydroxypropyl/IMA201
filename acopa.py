@@ -34,8 +34,7 @@ def RGB_to_HSI_modified(RGB_image : ArrayType, saturation_threshhold : int = Q/(
             I = (R + G + B) / 3
             S = np.sqrt((R - I)**2 + (G - I)**2 + (B - I)**2)
             if S > saturation_threshhold :
-                H = np.arccos( ( (G - I) - (B - I) ) / (S * np.sqrt(2)))
-                #TODO : H est dans [0, pi] pour l'instant, il faudrait qu'il soit dans [0, 2pi]
+                H = np.arccos( ( (G - I) - (B - I) ) / (S * np.sqrt(2))) #T H est dans [0, pi]
                 HSI_image[y][x] = [H, S, I, 0, 0, 0]
             else :
                 HSI_image[y][x] = [-1, S, I, 0, 0, 0]
