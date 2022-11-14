@@ -13,6 +13,7 @@ Q_hue = 9
 #%% convert image to a modified HSI
 
 def HSI_to_RGB(HSI_image : ArrayType) -> ArrayType :
+    print("entering HSI_to_RGB...")
     eps = 0.001
     RGB_image = []
     for row_index in range(len(HSI_image)):
@@ -73,6 +74,7 @@ def BGR_to_modified_HSI(BGR_image : ArrayType, saturation_threshhold : int = 0.0
     `HSI_image`:
     The image converted to HSI with three additional 0 coordinates for each pixel
     """
+    print("entering BGR_to_HSI...")
     HSI_image = np.zeros((BGR_image.shape[0], BGR_image.shape[1], 6))
     for y in range(len(BGR_image)):
         for x in range(len(BGR_image[y])): 
@@ -115,12 +117,12 @@ def get_hue_based_segmentation(HSI_image : ArrayType)  -> ArrayType :
     `histo` :
     The hue histogram
     """
+    print("entering get_hue_based_segmentation...")
     hues = []
     for line in HSI_image:
         for pixel in line : 
             if True : #condition of chromaticity
                 hues.append(pixel[0])
-    #print("hues", hues)
     histo, bins = np.histogram(hues, bins = np.arange(-np.pi, np.pi, step=2*np.pi/(Q_hue+1)) ) #H is better quantified, and is in [0, pi]
     return FTC(histo), histo
             
@@ -150,7 +152,7 @@ def get_saturation_based_segmentation(hue_segmentation : ArrayType, hue_histogra
     [i] contains the  saturation histogram for pixels in S_i in hue_histogram 
    
     """
-
+    print("entering get_saturation_based_segmentation...")
     # group pixels based on the hue segmentation they belong to :
     # saturation_grouped_by_hue[i] contains the pixels' saturation whose hues are in hue_segmentation[i]
 
@@ -161,10 +163,6 @@ def get_saturation_based_segmentation(hue_segmentation : ArrayType, hue_histogra
             pixel = HSI_image[line_index][row_index]
             hue_value = pixel[0]
             classified = False
-            #if hue_value == -1 : #pixel is achromatic
-             #   saturation_grouped_by_hue[0].append(pixel[1])
-              #  HSI_image[line_index][row_index][3] = 0 # this pixel is in the 0th segment of the hue segmentation
-               # classified = True
             #go through all the segments to find the one pixel belongs to, based on hue    
             i = 0
             while classified == False and i < len(hue_segmentation):
@@ -184,7 +182,7 @@ def get_saturation_based_segmentation(hue_segmentation : ArrayType, hue_histogra
     saturation_segmentation = []
     saturation_histograms = []
     for S_i in saturation_grouped_by_hue : 
-        histo, bins = np.histogram(S_i, bins = [i/Q for i in range(Q+1)]) #quantify S when calculating histogram
+        histo, bins = np.histogram(S_i, bins = [i/Q_sat for i in range(Q_sat+1)]) #quantify S when calculating histogram
         saturation_histograms.append(histo)
         saturation_segmentation.append(FTC(histo)) #apply FTC on the pixels in S_i based on the saturation value
 
@@ -207,7 +205,7 @@ def get_intensity_based_segmentation(saturation_segmentation : ArrayType, satura
     The intensity_segmentation where intensity_segmentation[i][j] is the intensity segmentation for the pixels with
     their hue in hue_segmentation[i] and saturation_segmentation[i][j]. 
     """
-    #print("saturation segmentation :",saturation_segmentation)
+    print("entering get_intensity_based_segmentation...")
     #create empty groups with same shape as saturation_segmentation
     intensity_grouped_by_saturation = [[] for i in range(len(saturation_segmentation))]
     intensity_segmentation = [[] for i in range(len(saturation_segmentation))]
@@ -217,8 +215,7 @@ def get_intensity_based_segmentation(saturation_segmentation : ArrayType, satura
         intensity_grouped_by_saturation[i] =[[] for j in range(nb_sub_segments)]
         intensity_segmentation[i] =[[] for j in range(nb_sub_segments)]
         intensity_histograms[i] =[[] for j in range(nb_sub_segments)]
-    #print("intensity_grouped_by_saturation :", intensity_grouped_by_saturation)
-    
+
     # classify based on saturation value
     for line_index in range(len(HSI_image)) : 
         for row_index in range(len(HSI_image[0])) :
@@ -231,12 +228,12 @@ def get_intensity_based_segmentation(saturation_segmentation : ArrayType, satura
                     segment = saturation_segmentation[i]
                     for j in range(len(segment)) :
                         if j== 0:
-                            min = segment[j][0]/Q
+                            min = segment[j][0]/Q_sat
                         else : 
-                            min = segment[j-1][-1]/Q
-                        max = segment[j][-1]/Q
+                            min = segment[j-1][-1]/Q_sat
+                        max = segment[j][-1]/Q_sat
                         if j == len(segment)-1 :
-                            max = (segment[j][-1] + 1) /Q
+                            max = (segment[j][-1] + 1) /Q_sat
                         #print("interval :", min, saturation_value, max)
                         if saturation_value >= min and saturation_value <= max : 
                             intensity_grouped_by_saturation[i][j].append(pixel[2])
@@ -249,17 +246,14 @@ def get_intensity_based_segmentation(saturation_segmentation : ArrayType, satura
                 exit(1)
 
     # calculate the intensity segmentation 
-    #print(intensity_segmentation)
     for i in range(len(intensity_grouped_by_saturation)) :
         S_i = intensity_grouped_by_saturation[i]
         for j in range(len(S_i)) :
             S_ij = S_i[j]
             #print("S_" +str(i) +"," +str(j) +" : ", S_ij)
-            histo, bins = np.histogram(S_ij, bins = np.arange(0, 255, 255/(Q+1)))
+            histo, bins = np.histogram(S_ij, bins = np.arange(0, 255, 255/(Q_int+1)))
             intensity_segmentation[i][j] = FTC(histo)
             intensity_histograms[i][j] = histo
-    #print("intensity histogram", intensity_histograms)
-    #print("intensity segmentation :", intensity_segmentation)
 
     #update the intensity segment index in HSI_image 
     for line_index in range(len(HSI_image)):
@@ -270,7 +264,7 @@ def get_intensity_based_segmentation(saturation_segmentation : ArrayType, satura
                 S_ijk = S_ij[k]
                 intensity = pixel[2]
                 #print("intervals :", S_ijk[0]*255/Q, intensity, S_ijk[-1]*255/Q)
-                if intensity >= S_ijk[0]*255/Q and intensity <=S_ijk[-1]*255/Q :
+                if intensity >= S_ijk[0]*255/Q_int and intensity <=S_ijk[-1]*255/Q_int :
                     HSI_image[line_index][row_index][5] = k
                     break
     return intensity_segmentation, HSI_image, intensity_histograms
@@ -278,6 +272,7 @@ def get_intensity_based_segmentation(saturation_segmentation : ArrayType, satura
 
 #%% Mode computing functions
 def compute_hue_modes(hue_segmentation : ArrayType, hue_histogram : ArrayType) -> ArrayType : 
+    print("entering computing_hue_modes...")
     hue_modes = []
     for S_i in hue_segmentation:
         segment = hue_histogram[S_i[0] : S_i[1] + 1]
@@ -286,6 +281,7 @@ def compute_hue_modes(hue_segmentation : ArrayType, hue_histogram : ArrayType) -
     return hue_modes
 
 def compute_saturation_modes(saturation_segmentation : ArrayType, saturation_histograms : ArrayType) -> ArrayType : 
+    print("entering computing_saturation_modes...")
     saturation_modes = []
     for i in range(len(saturation_segmentation)) : 
         sub_seg = []
@@ -294,12 +290,31 @@ def compute_saturation_modes(saturation_segmentation : ArrayType, saturation_his
             index_max = saturation_segmentation[i][j][1]
             segment = saturation_histograms[i][index_min : index_max+1]
             max_index = np.where( segment == np.amax(segment))[0] + index_min
-            sub_seg.append(max_index/Q)
+            sub_seg.append(max_index/Q_sat)
         saturation_modes.append(sub_seg)
     return saturation_modes
 
 def compute_intensity_modes(intensity_segmentation : ArrayType, intensity_histograms : ArrayType) -> ArrayType : 
+    """
+    Parameters : 
+    ---------------
+    `intensity_segmentation` : array 
+    The intensity segmentation of the image
+    
+    `intensity_histograms` : array
+    The intensity histograms of all the segments
+    
+    Returns : 
+    -------------
+    `intensity_modes`: array
+    Same shape as intensity_segmentation, containing in each segment a unique value corresponding to the mode.
+
+    `nb_modes` : int 
+    The total number of modes of the intensity component 
+    """
+    print("entering computing_intensity_modes...")
     intensity_modes = []
+    nb_modes = 0
     for i in range(len(intensity_segmentation)) : 
         sub_seg = []
         for j in range(len(intensity_segmentation[i])) :
@@ -308,39 +323,44 @@ def compute_intensity_modes(intensity_segmentation : ArrayType, intensity_histog
                 S_ijk = intensity_segmentation[i][j][k]
                 segment = intensity_histograms[i][j][S_ijk[0]: S_ijk[1]+1]
                 max_index = np.where( segment == np.amax(segment))[0] + S_ijk[0]           
-                sub_sub_seg.append(max_index*255/Q)
+                sub_sub_seg.append(max_index*255/Q_int)
+                nb_modes +=1
             sub_seg.append(sub_sub_seg)
         intensity_modes.append(sub_seg)
-    return intensity_modes
+    return intensity_modes, nb_modes
 
 
 
 
 #%% Putting everything together
 
-def acopa(image : ArrayType) -> ArrayType :
+def acopa(image : ArrayType, HSI : bool = False) -> ArrayType :
     """
+    Applies the acopa algorithm on `image`. 
+    By default, `image` must be in BGR and is converted in the function.
+    If `HSI` = True then the `image` is considered already in HSI and acopa is applied without any conversion.
     Parameters:
     --------------
-    
+    `image` : array
+    The image to apply the acopa algorithm
+
+    `HSI` : bool
+    Whether the image is coded in HSI or not. 
     Returns : 
     ---------
     """
-    HSI_image = BGR_to_modified_HSI(image)
+    print("entering acopa...")
+    if not(HSI) :
+        HSI_image = BGR_to_modified_HSI(image)
+    else : 
+        HSI_image = image
     hue_segmentation, hue_histogram = get_hue_based_segmentation(HSI_image)
-    #print("acopa hue histogram :", len(hue_histogram))
-    print("hue segmentation :", hue_segmentation)
     saturation_segmentation, HSI_image, saturation_histograms = get_saturation_based_segmentation(hue_segmentation, hue_histogram, HSI_image)
-    print("saturation segmentation :", saturation_segmentation)
     intensity_segmentation, HSI_image, intensity_histograms = get_intensity_based_segmentation(saturation_segmentation, saturation_histograms, HSI_image)
-    print("intensity segmentation :", intensity_segmentation)
-    #print("acopa saturation histograms:", saturation_histograms)
     hue_modes = compute_hue_modes(hue_segmentation, hue_histogram)
     saturation_modes = compute_saturation_modes(saturation_segmentation, saturation_histograms)
-    intensity_modes = compute_intensity_modes(intensity_segmentation, intensity_histograms)
-    #print("hue modes :", hue_modes)
-    #print("saturation modes :", saturation_modes)
-    #print("intensity modes :",intensity_modes)
+    intensity_modes, nb_colors = compute_intensity_modes(intensity_segmentation, intensity_histograms)
+    
     new_image = np.zeros(image.shape)
     for row_index in range(len(HSI_image)):
         for column_index in range(len(HSI_image[row_index])):
@@ -351,25 +371,21 @@ def acopa(image : ArrayType) -> ArrayType :
             new_image[row_index][column_index][0] = hue_modes[i][0]
             new_image[row_index][column_index][1] = saturation_modes[i][j][0]
             new_image[row_index][column_index][2] = intensity_modes[i][j][k][0]
-    return new_image
+    return new_image, nb_colors
 
             
 
 
 #%% Test
-image = cv2.imread("ladybug.jpeg")
-#HSI_image = BGR_to_modified_HSI(image)
-#hue_segmentation, hue_histogram = get_hue_based_segmentation(HSI_image)
-#print("isolated hue histogram :", hue_histogram)
-#saturation_segmentation, HSI_image, saturation_histograms = get_saturation_based_segmentation(hue_segmentation, hue_histogram, HSI_image)
-new_image = acopa(image)
-RGB_image = HSI_to_RGB(new_image)
-plt.imshow(RGB_image)
-plt.show()
-
-
-
-
-
-
-# %%
+image = cv2.imread("carottes.jpg")
+HSI_image = BGR_to_modified_HSI(image)
+for i in [300] :
+    for j in [60] :
+        Q_sat = i
+        Q_int = 250
+        Q_hue = j
+        img1, nb_colors = acopa(HSI_image, True)
+        img1 = HSI_to_RGB(img1)
+        plt.imshow(img1)
+        plt.title(label = "Q_int = " +str(Q_int) +" Q_sat = " + str(Q_sat) + " Q_hue = "+ str(Q_hue) + ", nb colors = " +str(nb_colors))
+        plt.show()
