@@ -14,6 +14,41 @@ Q = 9 # quantification factor
 Q_hue = 9
 #%% convert image to a modified HSI
 
+def HSI_to_RGB_colors(HSI_colors) :
+    eps = 0.001
+    RGB_colors = []
+    for color in HSI_colors:
+        H = color[0]
+        S = color[1]
+        I = color[2]
+
+        if np.abs(H) <= eps :
+            R = I + 2*I*S
+            G = I - I*S
+            B = I - I*S
+        elif np.abs(H-2*np.pi/3) < eps:
+            R = I - I*S
+            G = I + 2*I*S
+            B = I - I*S
+        elif np.abs(H + 2*np.pi/3) < eps : 
+            R = I - I*S
+            G = I - I*S
+            B = I + 2*I*S
+        elif eps < H and H < 2*np.pi/3  :
+            R = I + I*S*np.cos(H)/np.cos(np.pi/3 - H)
+            G = I + I*S*(1 - np.cos(H)/np.cos(np.pi/3 - H))
+            B = I - I*S
+        elif np.abs(H) > 2*np.pi/3 :
+            R = I - I*S
+            G = I + I*S*np.cos(H-2*np.pi/3)/np.cos(np.pi-H)
+            B = I + I*S*(1 - np.cos(H-2*np.pi/3)/np.cos(np.pi-H)) 
+        elif -2*np.pi/3 < H and H < eps : 
+            R = I + I*S*(1 - np.cos(H-4*np.pi/3)/np.cos(5*np.pi/3-H))
+            G = I - I*S
+            B = I + I*S*np.cos(H-4*np.pi/3)/np.cos(5*np.pi/3-H)
+        RGB_colors.append([math.floor(R),math.floor(G),math.floor(B)])
+    return RGB_colors
+
 def HSI_to_RGB(HSI_image : ArrayType) -> ArrayType :
     print("entering HSI_to_RGB...")
     eps = 0.001
@@ -363,40 +398,43 @@ def acopa(image : ArrayType, HSI : bool = False) -> ArrayType :
     saturation_modes = compute_saturation_modes(saturation_segmentation, saturation_histograms)
     intensity_modes, nb_colors = compute_intensity_modes(intensity_segmentation, intensity_histograms)
     
-    new_image = np.zeros(image.shape)
-    for row_index in range(len(HSI_image)):
-        for column_index in range(len(HSI_image[row_index])):
-            pixel = HSI_image[row_index][column_index]
-            i = math.floor(pixel[3])
-            j = math.floor(pixel[4])
-            k = math.floor(pixel[5])
-            new_image[row_index][column_index][0] = hue_modes[i][0]
-            new_image[row_index][column_index][1] = saturation_modes[i][j][0]
-            new_image[row_index][column_index][2] = intensity_modes[i][j][k][0]
-    return new_image, nb_colors
+
+    colors = []
+    for i in range(len(hue_modes)) :
+        H = hue_modes[i][0]
+        for j in range(len(saturation_modes[i])) :
+            S = saturation_modes[i][j][0]
+            for k in range(len(intensity_modes[i][j])):
+                I = intensity_modes[i][j][k][0]
+                colors.append([H, S, I])
+
+    return colors, nb_colors
 
             
 def final_palette(img, seeds): 
     img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-    img=img.reshape((img.shape[1]*img.shape[0],3))
-    kmeans=kmeans(n_clusters = len(seeds), init = seeds)
-    s=kmeans.fit(img)
-    labels = kmeans.predict(img)
     w, h, d = img.shape
-    return kmeans.cluster_centers_[labels].reshape(w, h, -1)
+    img_array = np.reshape(img, (w * h, d))
+    KMeans=kmeans(n_clusters = len(seeds), init = seeds).fit(img_array)
+    rgb_cols = KMeans.cluster_centers_.round(0).astype(int)
+    labels = KMeans.fit_predict(img_array)
+    img_quant = np.reshape(rgb_cols[labels],(w,h,d))
+    return img_quant
 
 #%% Test
-image = cv2.imread("carottes.jpg")
-HSI_image = BGR_to_modified_HSI(image)
-for i in [300] :
-    for j in [60] :
-        Q_sat = i
-        Q_int = 250
-        Q_hue = j
-        img1, nb_colors = acopa(HSI_image, True)
-        img1 = HSI_to_RGB(img1)
-        plt.imshow(img1)
-        plt.title(label = "Q_int = " +str(Q_int) +" Q_sat = " + str(Q_sat) + " Q_hue = "+ str(Q_hue) + ", nb colors = " +str(nb_colors))
-        plt.show()
+for name in ["glady.jpg"] :
+    image = cv2.imread(name)
+    HSI_image = BGR_to_modified_HSI(image)
+    for i in [50] :
+        for j in [50] :
+            Q_sat = i
+            Q_int = 50
+            Q_hue = j
+            colors, nb_colors = acopa(HSI_image, True)
+            colors = HSI_to_RGB_colors(colors)
+            img1 = final_palette(image, colors)
+            plt.imshow(img1)
+            plt.title(label = "Q_int = " +str(Q_int) +" Q_sat = " + str(Q_sat) + " Q_hue = "+ str(Q_hue) + ", nb colors = " +str(nb_colors))
+            plt.show()
 
 
