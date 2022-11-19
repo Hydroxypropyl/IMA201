@@ -514,11 +514,11 @@ def final_palette(img, seeds):
     return img_quant, rgb_colors, percent
 
 #%% Test
-image = cv2.imread("low_luminosity.png")
+image = cv2.imread("multicolore.png")
 HSI_image = BGR_to_modified_HSI(image)
-Q_sat = 180
-Q_int = 500
-Q_hue = 80
+Q_sat = 50
+Q_int = 50
+Q_hue = 20
 colors, nb_colors = acopa(HSI_image, True)
 colors = HSI_to_RGB_centers(colors)
 img1, RGB_colors, percent = final_palette(image, colors)
